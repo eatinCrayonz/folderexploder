@@ -1,0 +1,45 @@
+import os
+import tkinter as tk
+from tkinterdnd2 import DND_FILES, TkinterDnD
+
+OUTPUT_FILE = "code_dump.txt"
+IGNORED_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.gif', '.exe', '.dll', '.pyc', '.zip'}
+
+def is_text_file(filepath):
+    _, ext = os.path.splitext(filepath)
+    return ext.lower() not in IGNORED_EXTENSIONS
+
+def write_all_code(paths):
+    with open(OUTPUT_FILE, "w", encoding="utf-8") as out:
+        for path in paths:
+            for dirpath, _, filenames in os.walk(path):
+                for filename in filenames:
+                    file_path = os.path.join(dirpath, filename)
+                    if not is_text_file(file_path):
+                        continue
+                    try:
+                        with open(file_path, "r", encoding="utf-8") as f:
+                            out.write(f"\n\n===== {} =====\n\n".format(file_path))
+                            out.write(f.read())
+                    except Exception as e:
+                        out.write(f"\n\n===== {} (UNREADABLE: {}) =====\n\n".format(file_path, e))
+
+def drop(event):
+    dropped = root.tk.splitlist(event.data)
+    valid_paths = [p for p in dropped if os.path.isdir(p)]
+    write_all_code(valid_paths)
+    label.config(text="✅ Code exported to code_dump.txt")
+
+# --- GUI setup ---
+root = TkinterDnD.Tk()
+root.title("Folder Exploder")
+root.geometry("400x200")
+root.resizable(False, False)
+
+label = tk.Label(root, text="Drop folders here", font=("Arial", 14))
+label.pack(expand=True)
+
+label.drop_target_register(DND_FILES)
+label.dnd_bind('<<Drop>>', drop)
+
+root.mainloop()
